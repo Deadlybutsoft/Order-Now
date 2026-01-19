@@ -26,7 +26,7 @@ export function DashboardHeader({ restaurantName, restaurantId, activeTab, onTab
   ]
 
   return (
-    <header className="bg-[#1d7b37] sticky top-0 z-10 shadow-sm border-b border-white/10">
+    <header className="bg-black/90 backdrop-blur-md sticky top-0 z-10 shadow-sm border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo & Name */}
@@ -44,7 +44,7 @@ export function DashboardHeader({ restaurantName, restaurantId, activeTab, onTab
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
                 className={`px-6 py-2.5 rounded-full text-sm font-medium font-space transition-all ${activeTab === tab.id
-                  ? 'bg-white text-[#1d7b37] shadow-sm'
+                  ? 'bg-white text-black shadow-sm'
                   : 'text-white/70 hover:text-white'
                   }`}
               >
@@ -55,10 +55,21 @@ export function DashboardHeader({ restaurantName, restaurantId, activeTab, onTab
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
+            {/* View Order Page Button */}
+            <button
+              onClick={() => window.open(`/menu/${restaurantId}/${roomId}`, '_blank')}
+              className="flex items-center gap-2 h-12 px-5 rounded-full bg-white/10 text-white font-medium hover:bg-white/20 transition-colors border border-white/10"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              <span className="text-sm font-space">View Order Page</span>
+            </button>
+
             {/* Copy Link Button */}
             <button
               onClick={handleCopyLink}
-              className="flex items-center gap-2 h-12 px-5 rounded-full bg-white text-[#1d7b37] font-medium hover:bg-white/90 transition-colors"
+              className="flex items-center gap-2 h-12 px-5 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-colors"
             >
               {copied ? (
                 <>
@@ -72,7 +83,7 @@ export function DashboardHeader({ restaurantName, restaurantId, activeTab, onTab
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
-                  <span className="text-sm font-space">Copy Link</span>
+                  <span className="text-sm font-space">Copy Order Page Link</span>
                 </>
               )}
             </button>

@@ -27,7 +27,15 @@ export default function HomePage() {
       id: generateId(),
       name: restaurantName.trim(),
       createdAt: new Date().toISOString(),
-      menuItems: [],
+      menuItems: [
+        { id: generateId(), name: 'Margherita Pizza', price: 12.99, description: 'Classic tomato and cheese', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Cheeseburger', price: 8.99, description: 'Juicy beef patty with cheese', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Caesar Salad', price: 9.50, description: 'Fresh lettuce with caesar dressing', image: '', category: 'Starters' },
+        { id: generateId(), name: 'Spaghetti Bolognese', price: 14.00, description: 'Pasta with rich meat sauce', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Grilled Chicken Sandwich', price: 10.50, description: 'Chicken breast on toasted bun', image: '', category: 'Mains' },
+        { id: generateId(), name: 'French Fries', price: 4.50, description: 'Crispy golden fries', image: '', category: 'Sides' },
+        { id: generateId(), name: 'Coca-Cola', price: 2.50, description: 'Chilled soda', image: '', category: 'Drinks' }
+      ],
       roomId: generateId()
     }
 
@@ -44,7 +52,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background overflow-hidden">
+    <main className="min-h-screen bg-black overflow-hidden">
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-foreground/[0.02] to-transparent blur-3xl" />
@@ -61,12 +69,11 @@ export default function HomePage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-12 pb-12">
           {/* Hero Content */}
-          <div className="max-w-3xl w-full text-center space-y-12">
-
+          <div className="max-w-5xl w-full text-center space-y-12">
             {/* Heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-instrument-serif text-white leading-tight tracking-tight">
-              Voice-first restaurant ordering.<br />
-              <span className="opacity-90">Powered by AI. Just speak to order.</span>
+            {/* Unified Hero Text */}
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-instrument-serif text-white leading-relaxed tracking-wide">
+              Experience the first Zero-UI restaurant interface. Powered by <span className="font-bold">ElevenLabs Scribe v2</span>, it processes complex orders, modifications, and requests instantly. Taking orders has never been easier.
             </h1>
 
             {/* Input Group */}

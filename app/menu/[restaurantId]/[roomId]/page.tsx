@@ -32,6 +32,8 @@ export default function CustomerMenuPage({ params }: PageProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const autoOrderTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const [liveTranscript, setLiveTranscript] = useState('') // Live words as they come in
 
   // Auto-order countdown state
   const [autoOrderCountdown, setAutoOrderCountdown] = useState<number | null>(null)
@@ -113,32 +115,102 @@ export default function CustomerMenuPage({ params }: PageProps) {
     setCart([])
   }
 
-  // Voice Recording Functions
+  // Voice Recording Functions with Realtime WebSocket Streaming
   const startRecording = async () => {
     try {
-      audioChunksRef.current = []
       setTranscript('')
+      setLiveTranscript('')
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
+      // Get API key from server
+      const configResponse = await fetch('/api/transcribe-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyterms }),
+      })
+      const config = await configResponse.json()
+
+      if (!config.success) {
+        throw new Error(config.error || 'Failed to get stream config')
+      }
+
+      // Open WebSocket connection to ElevenLabs
+      const wsUrl = `wss://api.elevenlabs.io/v1/speech-to-text/stream?model_id=scribe_v2_realtime&language_code=en`
+      const ws = new WebSocket(wsUrl)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        console.log('WebSocket connected')
+        // Send initial config with API key and keyterms
+        ws.send(JSON.stringify({
+          type: 'configure',
+          api_key: config.apiKey,
+          keyterms: config.keyterms,
+          commit_strategy: 'vad', // Voice Activity Detection auto-commit
+        }))
+      }
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        console.log('WS message:', data)
+
+        if (data.type === 'transcript' || data.type === 'partial_transcript') {
+          // Live transcript update
+          setLiveTranscript(data.text || '')
+        } else if (data.type === 'committed_transcript' || data.type === 'final_transcript') {
+          // Final committed transcript
+          const finalText = data.text || data.transcript || ''
+          setTranscript(prev => prev + ' ' + finalText)
+
+          // Match menu items in the committed text
+          matchMenuItemsFromText(finalText)
+        }
+      }
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error)
+      }
+
+      ws.onclose = () => {
+        console.log('WebSocket closed')
+      }
+
+      // Start audio capture
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
       })
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
+      // Use AudioContext for PCM conversion
+      const audioContext = new AudioContext({ sampleRate: 16000 })
+      const source = audioContext.createMediaStreamSource(stream)
+      const processor = audioContext.createScriptProcessor(4096, 1, 1)
+
+      processor.onaudioprocess = (e) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          const inputData = e.inputBuffer.getChannelData(0)
+          // Convert to Int16 PCM
+          const pcmData = new Int16Array(inputData.length)
+          for (let i = 0; i < inputData.length; i++) {
+            pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF
+          }
+          // Send as base64
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)))
+          wsRef.current.send(JSON.stringify({
+            type: 'input_audio_chunk',
+            audio: base64,
+          }))
         }
       }
 
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop())
-        if (audioChunksRef.current.length > 0) {
-          await processAudio()
-        }
-      }
+      source.connect(processor)
+      processor.connect(audioContext.destination)
 
-      mediaRecorderRef.current = mediaRecorder
-      mediaRecorder.start(100)
+      // Store references for cleanup
+      mediaRecorderRef.current = { stream, audioContext, source, processor } as unknown as MediaRecorder
       setRecordingState('recording')
 
     } catch (err) {
@@ -148,9 +220,85 @@ export default function CustomerMenuPage({ params }: PageProps) {
   }
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop()
-      setRecordingState('processing')
+    // Close WebSocket
+    if (wsRef.current) {
+      // Send commit signal before closing
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'commit' }))
+      }
+      wsRef.current.close()
+      wsRef.current = null
+    }
+
+    // Stop audio capture
+    if (mediaRecorderRef.current) {
+      const refs = mediaRecorderRef.current as unknown as { stream: MediaStream; audioContext: AudioContext; source: MediaStreamAudioSourceNode; processor: ScriptProcessorNode }
+      refs.processor?.disconnect()
+      refs.source?.disconnect()
+      refs.audioContext?.close()
+      refs.stream?.getTracks().forEach(track => track.stop())
+      mediaRecorderRef.current = null
+    }
+
+    // Update final transcript with live transcript
+    if (liveTranscript) {
+      setTranscript(prev => (prev + ' ' + liveTranscript).trim())
+      matchMenuItemsFromText(liveTranscript)
+      setLiveTranscript('')
+    }
+
+    setRecordingState('idle')
+  }
+
+  // Match menu items from transcribed text
+  const matchMenuItemsFromText = (text: string) => {
+    if (!text) return
+
+    const lowerText = text.toLowerCase()
+    let itemsAdded = 0
+
+    // Number word mapping
+    const numberWords: Record<string, number> = {
+      'one': 1, 'a': 1, 'an': 1,
+      'two': 2, 'couple': 2,
+      'three': 3, 'four': 4, 'five': 5,
+      'six': 6, 'seven': 7, 'eight': 8,
+      'nine': 9, 'ten': 10,
+    }
+
+    // Sort by name length (longer first) to match more specific items first
+    const sortedItems = [...availableItems].sort((a, b) => b.name.length - a.name.length)
+
+    for (const item of sortedItems) {
+      const lowerName = item.name.toLowerCase()
+      const itemIndex = lowerText.indexOf(lowerName)
+
+      if (itemIndex !== -1) {
+        // Look for quantity before the item
+        let quantity = 1
+        const beforeText = text.substring(Math.max(0, itemIndex - 20), itemIndex).toLowerCase()
+
+        // Check for digits
+        const digitMatch = beforeText.match(/(\d+)\s*$/)
+        if (digitMatch) {
+          quantity = parseInt(digitMatch[1], 10)
+        } else {
+          // Check for number words
+          for (const [word, num] of Object.entries(numberWords)) {
+            if (beforeText.includes(word)) {
+              quantity = num
+              break
+            }
+          }
+        }
+
+        addToCart(item, quantity)
+        itemsAdded++
+      }
+    }
+
+    if (itemsAdded > 0) {
+      startAutoOrderCountdown()
     }
   }
 
@@ -164,71 +312,6 @@ export default function CustomerMenuPage({ params }: PageProps) {
     // If processing, do nothing
   }
 
-  const processAudio = async () => {
-    try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-
-      // Convert to base64
-      const reader = new FileReader()
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1]
-          resolve(base64)
-        }
-        reader.onerror = reject
-      })
-      reader.readAsDataURL(audioBlob)
-
-      const audioBase64 = await base64Promise
-
-      // Call Scribe v2 API
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audioBase64,
-          keyterms,
-          mimeType: 'audio/webm',
-        }),
-      })
-
-      const result: VoiceTranscriptionResult = await response.json()
-
-      if (!result.success) {
-        throw new Error(result.error || 'Transcription failed')
-      }
-
-      setTranscript(result.transcript)
-
-      // Add detected items to cart
-      let itemsAdded = 0
-      result.parsedItems.forEach(parsed => {
-        const menuItem = availableItems.find(
-          item => item.name.toLowerCase() === parsed.itemName.toLowerCase()
-        )
-        if (menuItem) {
-          const notes = parsed.modifiers.length > 0 ? parsed.modifiers.join(', ') : undefined
-          addToCart(menuItem, parsed.quantity, notes)
-          itemsAdded++
-        }
-      })
-
-      setRecordingState('idle')
-
-      // Start auto-order countdown if items were added
-      if (itemsAdded > 0) {
-        startAutoOrderCountdown()
-      }
-
-    } catch (err) {
-      console.error('Error processing audio:', err)
-      // Show as toast, not error page
-      setAudioError(err instanceof Error ? err.message : 'Failed to process audio. Try again.')
-      setRecordingState('idle')
-      // Auto-dismiss after 5 seconds
-      setTimeout(() => setAudioError(null), 5000)
-    }
-  }
 
   // Auto-order countdown functions
   const startAutoOrderCountdown = () => {
@@ -388,11 +471,18 @@ export default function CustomerMenuPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Transcript Display */}
-          {transcript && (
+          {/* Live Transcript Display */}
+          {(liveTranscript || transcript) && (
             <div className="px-4 py-3 bg-white/5 border-b border-white/10">
-              <p className="text-xs text-white/40 font-space mb-1">You said:</p>
-              <p className="text-white/80 text-sm">"{transcript}"</p>
+              <p className="text-xs text-white/40 font-space mb-1">
+                {recordingState === 'recording' ? '🎤 Listening...' : 'You said:'}
+              </p>
+              <p className="text-white/80 text-sm">
+                {transcript && <span>{transcript} </span>}
+                {liveTranscript && (
+                  <span className="text-green-400 animate-pulse">{liveTranscript}</span>
+                )}
+              </p>
             </div>
           )}
 

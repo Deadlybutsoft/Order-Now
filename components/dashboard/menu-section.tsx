@@ -46,7 +46,7 @@ export function MenuSection({ menuItems, onAddItem, onDeleteItem }: MenuSectionP
     <div className="space-y-6">
       {/* Top Bar: Add Item Button */}
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-white font-space">Menu Items</h2>
+        <h2 className="text-xl font-bold text-white font-space">Your Restaurant Menu Items</h2>
 
         {/* Add Item Button */}
         <button

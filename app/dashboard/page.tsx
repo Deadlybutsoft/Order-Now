@@ -105,7 +105,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white">
       <DashboardHeader
         restaurantName={restaurant.name}
         restaurantId={restaurant.id}
@@ -142,8 +142,8 @@ export default function DashboardPage() {
                   key={status}
                   onClick={() => setOrderFilter(status)}
                   className={`px-5 py-2.5 rounded-full text-sm font-medium font-space whitespace-nowrap transition-all ${orderFilter === status
-                      ? 'bg-foreground text-background'
-                      : 'bg-card text-foreground hover:bg-muted shadow-sm'
+                    ? 'bg-foreground text-background'
+                    : 'bg-card text-foreground hover:bg-muted shadow-sm'
                     }`}
                 >
                   {status === 'all' ? 'All Orders' : STATUS_CONFIG[status].label}
