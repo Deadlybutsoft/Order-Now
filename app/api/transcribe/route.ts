@@ -116,11 +116,11 @@ function findMenuItemsInTranscript(
             let quantity = 1 // Default
 
             // First, try to find a cardinal entity near this menu item
-            // Look for entities that appear before the item (within 30 chars)
+            // Look for entities that appear before the item (within 50 chars)
             const nearbyCardinal = cardinalEntities.find(entity => {
                 const entityEnd = entity.endChar
                 // Entity should be before the item and within reasonable distance
-                return entityEnd <= termIndex && (termIndex - entityEnd) < 30
+                return entityEnd <= termIndex && (termIndex - entityEnd) < 50
             })
 
             if (nearbyCardinal) {
@@ -128,9 +128,11 @@ function findMenuItemsInTranscript(
                 quantity = parseQuantity(nearbyCardinal.text)
                 console.log(`Found entity "${nearbyCardinal.text}" → quantity ${quantity} for "${term}"`)
             } else {
-                // Fallback: Look backwards from the item for quantity words
-                const beforeText = transcript.substring(Math.max(0, termIndex - 30), termIndex)
+                // Fallback: Look backwards from the item for quantity words (increased to 50 chars)
+                const beforeText = transcript.substring(Math.max(0, termIndex - 50), termIndex)
+                console.log(`Looking for quantity in: "${beforeText}" for "${term}"`)
                 quantity = parseQuantity(beforeText)
+                console.log(`Fallback quantity: ${quantity} for "${term}"`)
             }
 
             // Look around the item for modifiers
@@ -149,9 +151,11 @@ function findMenuItemsInTranscript(
                 modifiers,
                 confidence,
             })
+            console.log(`Added to cart: ${quantity}x ${term}`)
         }
     }
 
+    console.log('Final parsed items:', JSON.stringify(parsedItems, null, 2))
     return parsedItems
 }
 
