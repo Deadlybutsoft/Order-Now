@@ -260,19 +260,24 @@ export default function CustomerMenuPage({ params }: PageProps) {
     autoOrderTimerRef.current = setInterval(() => {
       setAutoOrderCountdown(prev => {
         if (prev === null || prev <= 1) {
-          // Time's up - place the order
+          // Time's up - clear timer
           if (autoOrderTimerRef.current) {
             clearInterval(autoOrderTimerRef.current)
             autoOrderTimerRef.current = null
           }
-          // Trigger order placement
-          placeOrderNow()
-          return null
+          return 0 // Set to 0 to trigger the effect
         }
         return prev - 1
       })
     }, 1000)
   }
+
+  // Effect to place order when countdown reaches 0
+  useEffect(() => {
+    if (autoOrderCountdown === 0 && cart.length > 0) {
+      placeOrder()
+    }
+  }, [autoOrderCountdown])
 
   const placeOrderNow = () => {
     cancelAutoOrder()
