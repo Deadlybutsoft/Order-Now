@@ -29,7 +29,7 @@ export default function HomePage() {
       createdAt: new Date().toISOString(),
       menuItems: [
         { id: generateId(), name: 'Margherita Pizza', price: 12.99, description: 'Classic tomato and cheese', image: '', category: 'Mains' },
-        { id: generateId(), name: 'Cheeseburger', price: 8.99, description: 'Juicy beef patty with cheese', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Cheese burger', price: 8.99, description: 'Juicy beef patty with cheese', image: '', category: 'Mains' },
         { id: generateId(), name: 'Caesar Salad', price: 9.50, description: 'Fresh lettuce with caesar dressing', image: '', category: 'Starters' },
         { id: generateId(), name: 'Spaghetti Bolognese', price: 14.00, description: 'Pasta with rich meat sauce', image: '', category: 'Mains' },
         { id: generateId(), name: 'Grilled Chicken Sandwich', price: 10.50, description: 'Chicken breast on toasted bun', image: '', category: 'Mains' },
