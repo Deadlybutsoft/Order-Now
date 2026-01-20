@@ -274,10 +274,10 @@ export default function CustomerMenuPage({ params }: PageProps) {
 
   // Effect to place order when countdown reaches 0
   useEffect(() => {
-    if (autoOrderCountdown === 0 && cart.length > 0) {
+    if (autoOrderCountdown === 0 && cart.length > 0 && !orderPlaced) {
       placeOrder()
     }
-  }, [autoOrderCountdown])
+  }, [autoOrderCountdown, orderPlaced])
 
   const placeOrderNow = () => {
     cancelAutoOrder()
