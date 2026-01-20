@@ -28,13 +28,13 @@ export default function HomePage() {
       name: restaurantName.trim(),
       createdAt: new Date().toISOString(),
       menuItems: [
-        { id: generateId(), name: 'Margherita Pizza', price: 12.99, description: 'Classic tomato and cheese', image: '', category: 'Mains' },
-        { id: generateId(), name: 'Cheeseburger', price: 8.99, description: 'Juicy beef patty with cheese', image: '', category: 'Mains' },
-        { id: generateId(), name: 'Caesar Salad', price: 9.50, description: 'Fresh lettuce with caesar dressing', image: '', category: 'Starters' },
-        { id: generateId(), name: 'Spaghetti Bolognese', price: 14.00, description: 'Pasta with rich meat sauce', image: '', category: 'Mains' },
-        { id: generateId(), name: 'Grilled Chicken Sandwich', price: 10.50, description: 'Chicken breast on toasted bun', image: '', category: 'Mains' },
-        { id: generateId(), name: 'French Fries', price: 4.50, description: 'Crispy golden fries', image: '', category: 'Sides' },
-        { id: generateId(), name: 'Coca-Cola', price: 2.50, description: 'Chilled soda', image: '', category: 'Drinks' }
+        { id: generateId(), name: 'Pizza', price: 12.99, description: 'Classic margherita', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Burger', price: 8.99, description: 'Juicy beef with cheese', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Salad', price: 9.50, description: 'Fresh caesar salad', image: '', category: 'Starters' },
+        { id: generateId(), name: 'Spaghetti', price: 14.00, description: 'Pasta bolognese', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Sandwich', price: 10.50, description: 'Grilled chicken', image: '', category: 'Mains' },
+        { id: generateId(), name: 'Fries', price: 4.50, description: 'Crispy golden', image: '', category: 'Sides' },
+        { id: generateId(), name: 'Coke', price: 2.50, description: 'Chilled soda', image: '', category: 'Drinks' }
       ],
       roomId: generateId()
     }
