@@ -56,7 +56,11 @@ export default function DashboardPage() {
 
     const loadOrders = () => {
       const allOrders = getOrders().filter(o => o.restaurantId === restaurant.id)
-      setOrders(allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+      // Deduplicate orders by ID (in case of any duplicates)
+      const uniqueOrders = allOrders.filter((order, index, self) =>
+        index === self.findIndex(o => o.id === order.id)
+      )
+      setOrders(uniqueOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
     }
 
     loadOrders()
