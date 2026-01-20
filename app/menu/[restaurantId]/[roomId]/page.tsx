@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, use, useRef } from 'react'
-import { getRestaurant, addOrder, generateId } from '@/lib/store'
+import { getRestaurant, getRestaurantAsync, addOrder, generateId } from '@/lib/store'
 import type { Restaurant, MenuItem, OrderItem, VoiceTranscriptionResult } from '@/lib/types'
 import { OrderConfirmation } from '@/components/customer/order-confirmation'
 
@@ -39,13 +39,25 @@ export default function CustomerMenuPage({ params }: PageProps) {
   const [autoOrderCountdown, setAutoOrderCountdown] = useState<number | null>(null)
 
   useEffect(() => {
-    const data = getRestaurant()
-    if (!data || data.id !== resolvedParams.restaurantId) {
-      setError('Restaurant not found')
+    // First try localStorage for instant load
+    const localData = getRestaurant()
+    if (localData && localData.id === resolvedParams.restaurantId) {
+      setRestaurant(localData)
+      setAvailableItems(localData.menuItems)
       return
     }
-    setRestaurant(data)
-    setAvailableItems(data.menuItems)
+
+    // Then fetch from Supabase for cross-device access
+    const fetchRestaurant = async () => {
+      const data = await getRestaurantAsync(resolvedParams.restaurantId)
+      if (!data) {
+        setError('Restaurant not found')
+        return
+      }
+      setRestaurant(data)
+      setAvailableItems(data.menuItems)
+    }
+    fetchRestaurant()
   }, [resolvedParams.restaurantId])
 
   // Generate keyterms from menu items
