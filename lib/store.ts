@@ -144,13 +144,8 @@ export function saveOrders(orders: Order[]): void {
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
 }
 
-// Add order to both Supabase and localStorage
+// Add order to Supabase only (localStorage is handled by addOrder)
 export async function addOrderAsync(order: Order): Promise<void> {
-  // Save to localStorage
-  const orders = getOrders()
-  orders.push(order)
-  saveOrders(orders)
-
   // Save to Supabase
   try {
     const { error } = await supabase
