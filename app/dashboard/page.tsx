@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getRestaurant, saveRestaurant, generateId, getOrders, updateOrderStatus } from '@/lib/store'
+import { getRestaurant, saveRestaurant, generateId, getOrdersAsync, updateOrderStatus } from '@/lib/store'
 import type { Restaurant, MenuItem, Order } from '@/lib/types'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { MenuSection } from '@/components/dashboard/menu-section'
@@ -50,17 +50,13 @@ export default function DashboardPage() {
     }
   }, [router])
 
-  // Load orders with auto-refresh
+  // Load orders with auto-refresh from Supabase
   useEffect(() => {
     if (!restaurant) return
 
-    const loadOrders = () => {
-      const allOrders = getOrders().filter(o => o.restaurantId === restaurant.id)
-      // Deduplicate orders by ID (in case of any duplicates)
-      const uniqueOrders = allOrders.filter((order, index, self) =>
-        index === self.findIndex(o => o.id === order.id)
-      )
-      setOrders(uniqueOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+    const loadOrders = async () => {
+      const allOrders = await getOrdersAsync(restaurant.id)
+      setOrders(allOrders)
     }
 
     loadOrders()

@@ -100,7 +100,7 @@ export function saveRestaurant(restaurant: Restaurant): void {
   saveRestaurantAsync(restaurant)
 }
 
-// ============ ORDER FUNCTIONS ============
+// ============ ORDER FUNCTIONS (Supabase Only - Single Source of Truth) ============
 
 // Get orders from Supabase
 export async function getOrdersAsync(restaurantId?: string): Promise<Order[]> {
@@ -131,22 +131,8 @@ export async function getOrdersAsync(restaurantId?: string): Promise<Order[]> {
   }
 }
 
-// Sync function for backward compatibility
-export function getOrders(): Order[] {
-  if (typeof window === 'undefined') return []
-  const data = localStorage.getItem(ORDERS_KEY)
-  return data ? JSON.parse(data) : []
-}
-
-// Save orders to localStorage (sync)
-export function saveOrders(orders: Order[]): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
-}
-
-// Add order to Supabase only (localStorage is handled by addOrder)
-export async function addOrderAsync(order: Order): Promise<void> {
-  // Save to Supabase
+// Add order to Supabase (Single Source of Truth)
+export async function addOrderAsync(order: Order): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('orders')
@@ -163,32 +149,22 @@ export async function addOrderAsync(order: Order): Promise<void> {
 
     if (error) {
       console.error('Error saving order to Supabase:', error)
+      return false
     }
+    return true
   } catch (e) {
     console.error('Error saving order:', e)
+    return false
   }
 }
 
-// Sync function for backward compatibility
+// Sync wrapper for backward compatibility (calls async version)
 export function addOrder(order: Order): void {
-  const orders = getOrders()
-  orders.push(order)
-  saveOrders(orders)
-  // Also save to Supabase async
   addOrderAsync(order)
 }
 
-// Update order status
-export async function updateOrderStatusAsync(orderId: string, status: Order['status']): Promise<void> {
-  // Update localStorage
-  const orders = getOrders()
-  const index = orders.findIndex(o => o.id === orderId)
-  if (index !== -1) {
-    orders[index].status = status
-    saveOrders(orders)
-  }
-
-  // Update Supabase
+// Update order status in Supabase (Single Source of Truth)
+export async function updateOrderStatusAsync(orderId: string, status: Order['status']): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('orders')
@@ -197,20 +173,16 @@ export async function updateOrderStatusAsync(orderId: string, status: Order['sta
 
     if (error) {
       console.error('Error updating order status in Supabase:', error)
+      return false
     }
+    return true
   } catch (e) {
     console.error('Error updating order status:', e)
+    return false
   }
 }
 
-// Sync function for backward compatibility
+// Sync wrapper for backward compatibility
 export function updateOrderStatus(orderId: string, status: Order['status']): void {
-  const orders = getOrders()
-  const index = orders.findIndex(o => o.id === orderId)
-  if (index !== -1) {
-    orders[index].status = status
-    saveOrders(orders)
-  }
-  // Also update Supabase async
   updateOrderStatusAsync(orderId, status)
 }
