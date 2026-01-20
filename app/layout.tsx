@@ -34,24 +34,6 @@ const robotoFlex = Roboto_Flex({
 export const metadata: Metadata = {
   title: 'Order Now - Voice-First Restaurant Ordering',
   description: 'AI-powered voice ordering system using ElevenLabs Scribe v2',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
 }
 
 export default function RootLayout({
